@@ -1,0 +1,8 @@
+Django==4.2.7
+channels==4.0.0
+channels-redis==4.1.0
+redis==5.0.1
+opencv-contrib-python==4.6.0.66
+Pillow>=10.2.0
+numpy==1.24.4
+python-decouple==3.8

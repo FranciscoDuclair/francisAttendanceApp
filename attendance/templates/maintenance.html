@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title|default:'System Maintenance' }}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .maintenance-container {
+            max-width: 600px;
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .maintenance-icon {
+            font-size: 4rem;
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            color: #343a40;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .status-badge {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+        .admin-login {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <div class="maintenance-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-tools" viewBox="0 0 16 16">
+                <path d="M1 0 0 1l2.2 3.081a1 1 0 0 0 .815.419h.07a1 1 0 0 1 .708.293l2.675 2.675-2.617 2.654A3.003 3.003 0 0 0 0 13a3 3 0 1 0 5.878-.851l2.654-2.617.968.968-.305.914a1 1 0 0 0 .242 1.023l3.27 3.27a.997.997 0 0 0 1.414 0l1.586-1.586a.997.997 0 0 0 0-1.414l-3.27-3.27a1 1 0 0 0-1.023-.242L10.5 9.5l-.96-.96 2.68-2.643A3.005 3.005 0 0 0 16 3c0-.269-.035-.53-.102-.777l-2.14 2.141L12 4l-.364-1.757L13.777.102a3 3 0 0 0-3.675 3.68L7.462 6.46 4.793 3.793a1 1 0 0 1-.293-.707v-.071a1 1 0 0 0-.419-.814L1 0Zm9.646 10.646a.5.5 0 0 1 .708 0l2.914 2.915a.5.5 0 0 1-.707.707l-2.915-2.914a.5.5 0 0 1 0-.708ZM3 11l.471.242.529.026.287.445.445.287.026.529L5 13l-.242.471-.026.529-.445.287-.287.445-.529.026L3 15l-.471-.242L2 14.732l-.287-.445L1.268 14l-.026-.529L1 13l.242-.471.026-.529.445-.287.287-.445.529-.026L3 11Z"/>
+            </svg>
+        </div>
+        
+        <div class="status-badge">MAINTENANCE MODE</div>
+        
+        <h1>We'll Be Back Soon!</h1>
+        
+        <p>{{ message|default:"We're currently performing scheduled maintenance to improve our service. We apologize for the inconvenience and appreciate your patience." }}</p>
+        
+        <div class="progress" style="height: 4px; margin: 2rem 0;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 75%"></div>
+        </div>
+        
+        <p class="small text-muted">Estimated time until completion: <span id="countdown">30 minutes</span></p>
+        
+        {% if user.is_staff %}
+        <div class="admin-login">
+            <a href="{% url 'admin:index' %}" class="btn btn-primary">Access Admin Panel</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Simple countdown timer (just for show)
+        let minutes = 30;
+        const countdownElement = document.getElementById('countdown');
+        
+        setInterval(() => {
+            minutes = Math.max(0, minutes - 1);
+            const mins = minutes % 60;
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                countdownElement.textContent = `${hours} hour${hours > 1 ? 's' : ''} and ${mins} minute${mins !== 1 ? 's' : ''}`;
+            } else {
+                countdownElement.textContent = `${mins} minute${mins !== 1 ? 's' : ''}`;
+            }
+            
+            if (minutes <= 0) {
+                // Auto-refresh when countdown reaches zero
+                window.location.reload();
+            }
+        }, 60000); // Update every minute
+    </script>
+</body>
+</html>

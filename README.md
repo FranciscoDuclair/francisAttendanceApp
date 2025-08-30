@@ -2,51 +2,84 @@
 
 A comprehensive employee attendance system using face recognition technology.
 
+## Project Structure
+
+```
+fransciAttendance/
+├── attendance/               # Django app for attendance functionality
+├── attendance_system/        # Django project settings
+├── media/                    # Media files (employee photos)
+│   └── employee_photos/
+├── mobile/                   # React Native mobile app
+├── scripts/                  # Utility scripts
+├── static/                   # Static files
+├── venv/                     # Python virtual environment
+├── db.sqlite3                # SQLite database
+├── manage.py                 # Django management script
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
+```
+
 ## Tech Stack
 
 **Backend:**
+- Python 3.11
 - Django 4.2.7
-- Django REST Framework
+- OpenCV 4.6.0.66 (for face detection)
 - SQLite Database
-- face_recognition library (dlib-based)
-- Pillow for image processing
+- Django REST Framework (for API endpoints)
+- Channels (for WebSocket support)
+- Redis (for channel layer)
 
-**Frontend:**
+**Frontend (Mobile):**
 - React Native
-- Expo (for easier development)
-- react-native-vision-camera for camera access
+- Expo
+- react-native-vision-camera
 
 ## Features
 
-### Current (Phase 1)
-- ✅ Employee registration with face encoding
-- ✅ Face recognition-based attendance (check-in/check-out)
-- ✅ Attendance records and daily summaries
-- ✅ REST API endpoints
-- ✅ Admin panel for management
+### Core Features
+- Employee registration with face encoding
+- Face recognition-based attendance (check-in/check-out)
+- Real-time attendance tracking
+- Daily attendance summaries
+- Admin dashboard
+- REST API for mobile app integration
+- WebSocket for real-time updates
 
-### Future Phases
+### Future Features
 - Shift management
 - Leave management
-- Payroll management
-- Notification management
+- Payroll integration
+- Notification system
 
 ## Setup Instructions
 
+### Prerequisites
+- Python 3.11+
+- Node.js and npm (for mobile app)
+- Redis server (for WebSocket support)
+
 ### Backend Setup
 
-1. **Install Dependencies:**
+1. **Create and activate virtual environment:**
+   ```bash
+   python -m venv venv
+   .\venv\Scripts\activate  # Windows
+   source venv/bin/activate  # Linux/Mac
+   ```
+
+2. **Install Python dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Run Migrations:**
+3. **Set up the database:**
    ```bash
-   python manage.py makemigrations
    python manage.py migrate
    ```
 
-3. **Create Superuser:**
+4. **Create superuser (admin):**
    ```bash
    python manage.py createsuperuser
    ```

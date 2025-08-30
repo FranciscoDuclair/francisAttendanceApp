@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}HR Dashboard - Face Recognition Attendance{% endblock %}
+
+{% block extra_head %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="gradient-bg text-white rounded p-4 mb-4">
+                <h1 class="display-4"><i class="fas fa-users-cog me-3"></i>HR Dashboard</h1>
+                <p class="lead">Human Resources analytics and workforce management</p>
+
+<!-- HR Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-percentage fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">{{ overall_attendance }}%</h5>
+                <p class="card-text">Overall Attendance</p>
+                <small class="text-muted">This Month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                <h5 class="card-title">{{ avg_work_hours }}</h5>
+                <p class="card-text">Avg Work Hours</p>
+                <small class="text-muted">Per Employee/Day</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-user-times fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">{{ absent_today }}</h5>
+                <p class="card-text">Absent Today</p>
+                <small class="text-muted">{{ absent_percentage }}% of workforce</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h5 class="card-title">{{ late_arrivals }}</h5>
+                <p class="card-text">Late Arrivals</p>
+                <small class="text-muted">This Week</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Attendance Reports -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-chart-bar me-2"></i>Attendance Reports</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="generateReport('daily')">
+                        <i class="fas fa-calendar-day me-2"></i>Daily Report
+                    </button>
+                    <button class="btn btn-outline-info" onclick="generateReport('weekly')">
+                        <i class="fas fa-calendar-week me-2"></i>Weekly Report
+                    </button>
+                    <button class="btn btn-outline-success" onclick="generateReport('monthly')">
+                        <i class="fas fa-calendar-alt me-2"></i>Monthly Report
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="generateReport('custom')">
+                        <i class="fas fa-calendar-check me-2"></i>Custom Range
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <h6>Quick Exports</h6>
+                <div class="d-grid gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportData('csv')">
+                        <i class="fas fa-file-csv me-1"></i>Export CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportData('pdf')">
+                        <i class="fas fa-file-pdf me-1"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Performance -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-building me-2"></i>Department Performance</h5>
+            </div>
+            <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                {% for dept in department_stats %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-1">{{ dept.name|default:"Unknown" }}</h6>
+                            <span class="badge bg-{{ dept.performance_class }}">{{ dept.attendance_rate }}%</span>
+                        </div>
+                        <div class="progress mb-1" style="height: 8px;">
+                            <div class="progress-bar bg-{{ dept.performance_class }}" 
+                                 style="width: {{ dept.attendance_rate }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            {{ dept.present_count }}/{{ dept.total_count }} present today
+                            • Avg: {{ dept.avg_hours }}h/day
+                        </small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Performance Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-users me-2"></i>Employee Performance Overview</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary active" onclick="filterPerformance('all')">All</button>
+                        <button class="btn btn-outline-success" onclick="filterPerformance('excellent')">Excellent</button>
+                        <button class="btn btn-outline-warning" onclick="filterPerformance('needs-attention')">Needs Attention</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Attendance Rate</th>
+                                <th>Avg Hours/Day</th>
+                                <th>Late Count</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in employee_performance %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if emp.profile_image %}
+                                                <img src="{{ emp.profile_image.url }}" alt="{{ emp.first_name }}" 
+                                                     class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ emp.first_name }} {{ emp.last_name }}</strong>
+                                                <br><small class="text-muted">{{ emp.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ emp.department|default:"N/A" }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ emp.attendance_class }}">
+                                            {{ emp.attendance_rate }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ emp.avg_hours }}h</td>
+                                    <td>
+                                        {% if emp.late_count > 0 %}
+                                            <span class="badge bg-warning">{{ emp.late_count }}</span>
+                                        {% else %}
+                                            <span class="text-muted">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if emp.attendance_rate >= 95 %}
+                                            <span class="badge bg-success">Excellent</span>
+                                        {% elif emp.attendance_rate >= 80 %}
+                                            <span class="badge bg-info">Good</span>
+                                        {% elif emp.attendance_rate >= 60 %}
+                                            <span class="badge bg-warning">Fair</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Poor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="viewEmployeeDetails({{ emp.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-info btn-sm" onclick="sendMessage({{ emp.id }})">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts and Notifications -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-bell me-2"></i>HR Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>{{ employees_no_face_encoding }}</strong> employees need face encoding setup
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>{{ late_employees_today }}</strong> employees arrived late today
+                </div>
+                {% if absent_employees_today > 5 %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-users-slash me-2"></i>
+                        High absenteeism: <strong>{{ absent_employees_today }}</strong> employees absent
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-trophy me-2"></i>Top Performers</h5>
+            </div>
+            <div class="card-body">
+                {% for performer in top_performers %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="badge bg-gold me-2">{{ forloop.counter }}</div>
+                            <div>
+                                <strong>{{ performer.first_name }} {{ performer.last_name }}</strong>
+                                <br><small class="text-muted">{{ performer.department }}</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success">{{ performer.attendance_rate }}%</span>
+                            <br><small class="text-muted">{{ performer.avg_hours }}h avg</small>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- Close container-fluid -->
+{% endblock %}
+
+{% block extra_js %}
+    {% include 'websocket_base.html' %}
+    <script>
+function generateReport(type) {
+    alert(`Generating ${type} report...`);
+    // Implementation for report generation
+}
+
+function exportData(format) {
+    alert(`Exporting data in ${format} format...`);
+    // Implementation for data export
+}
+
+function filterPerformance(filter) {
+    // Update active button
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Filter table rows (implementation would go here)
+    alert(`Filtering by: ${filter}`);
+}
+
+function viewEmployeeDetails(employeeId) {
+    alert(`Viewing details for employee ${employeeId}`);
+    // Implementation for employee details
+    window.location.href = `/employees/${employeeId}/`;
+}
+
+function sendMessage(employeeId) {
+    alert(`Sending message to employee ${employeeId}`);
+    // Implementation for messaging system
+}
+
+    // Initialize WebSocket for HR dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize notifications and dashboard updates
+        if (typeof window.AttendanceWebSockets !== 'undefined') {
+            window.AttendanceWebSockets.initNotifications();
+            if (typeof window.AttendanceWebSockets.initDashboard === 'function') {
+                window.AttendanceWebSockets.initDashboard();
+            }
+        }
+    });
+    </script>
+{% endblock %}

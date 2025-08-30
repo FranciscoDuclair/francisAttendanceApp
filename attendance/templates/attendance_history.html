@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance History - Face Recognition Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-history me-2"></i>Attendance History</h2>
+    <div class="btn-group" role="group">
+        <input type="radio" class="btn-check" name="view" id="records" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="records">Records</label>
+        
+        <input type="radio" class="btn-check" name="view" id="summaries" autocomplete="off">
+        <label class="btn btn-outline-primary" for="summaries">Daily Summary</label>
+    </div>
+</div>
+
+<!-- Records View -->
+<div id="recordsView">
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-list me-2"></i>Attendance Records</h5>
+        </div>
+        <div class="card-body">
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Action</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if record.employee.profile_image %}
+                                                <img src="{{ record.employee.profile_image.url }}" alt="{{ record.employee.first_name }}" 
+                                                     class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ record.employee.first_name }} {{ record.employee.last_name }}</strong>
+                                                <br><small class="text-muted">{{ record.employee.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if record.action|lower == 'check_in' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-sign-in-alt me-1"></i>
+                                                {{ record.action|title }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-sign-out-alt me-1"></i>
+                                                {{ record.action|title }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.timestamp|date:"M d, Y" }}</td>
+                                    <td>{{ record.timestamp|time:"H:i" }}</td>
+                                    <td>
+                                        {% if record.confidence %}
+                                            {% if record.confidence > 80 %}
+                                                <span class="badge bg-success">
+                                                    {{ record.confidence|floatformat:1 }}%
+                                                </span>
+                                            {% elif record.confidence > 60 %}
+                                                <span class="badge bg-warning">
+                                                    {{ record.confidence|floatformat:1 }}%
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    {{ record.confidence|floatformat:1 }}%
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No attendance records found</h5>
+                    <p class="text-muted">Start tracking attendance using face recognition</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Summaries View -->
+<div id="summariesView" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-chart-bar me-2"></i>Daily Summary</h5>
+        </div>
+        <div class="card-body">
+            {% if summaries %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Check In</th>
+                                <th>Check Out</th>
+                                <th>Hours Worked</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for summary in summaries %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if summary.employee.profile_image %}
+                                                <img src="{{ summary.employee.profile_image.url }}" alt="{{ summary.employee.first_name }}" 
+                                                     class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ summary.employee.first_name }} {{ summary.employee.last_name }}</strong>
+                                                <br><small class="text-muted">{{ summary.employee.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ summary.date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if summary.check_in_time %}
+                                            {{ summary.check_in_time|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if summary.check_out_time %}
+                                            {{ summary.check_out_time|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if summary.hours_worked %}
+                                            <strong>{{ summary.hours_worked|floatformat:1 }}h</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if summary.check_out_time %}
+                                            <span class="badge bg-success">Complete</span>
+                                        {% elif summary.check_in_time %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No daily summaries found</h5>
+                    <p class="text-muted">Summaries will appear after attendance tracking</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const recordsRadio = document.getElementById('records');
+    const summariesRadio = document.getElementById('summaries');
+    const recordsView = document.getElementById('recordsView');
+    const summariesView = document.getElementById('summariesView');
+    
+    recordsRadio.addEventListener('change', function() {
+        if (this.checked) {
+            recordsView.style.display = 'block';
+            summariesView.style.display = 'none';
+        }
+    });
+    
+    summariesRadio.addEventListener('change', function() {
+        if (this.checked) {
+            recordsView.style.display = 'none';
+            summariesView.style.display = 'block';
+        }
+    });
+});
+</script>
+{% endblock %}

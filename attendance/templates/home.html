@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Face Recognition Attendance{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="gradient-bg text-white rounded p-4 mb-4">
+            <h1 class="display-4"><i class="fas fa-user-check me-3"></i>Face Recognition Attendance</h1>
+            <p class="lead">Manage employees and track attendance using face recognition technology</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">{{ total_employees }}</h5>
+                <p class="card-text">Total Employees</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-user-check fa-3x text-success mb-3"></i>
+                <h5 class="card-title">{{ present_today }}</h5>
+                <p class="card-text">Present Today</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">{{ total_hours }}</h5>
+                <p class="card-text">Total Hours Today</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-face-smile fa-3x text-info mb-3"></i>
+                <h5 class="card-title">{{ with_face_encoding }}</h5>
+                <p class="card-text">Face Encodings</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance_check' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-camera me-2"></i>Check Attendance
+                    </a>
+                    <a href="{% url 'employee_create' %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Add Employee
+                    </a>
+                    <a href="{% url 'employee_list' %}" class="btn btn-info btn-lg">
+                        <i class="fas fa-users me-2"></i>Manage Employees
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_records %}
+                    {% for record in recent_records %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ record.employee.first_name }} {{ record.employee.last_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ record.employee.employee_id }}</small>
+                            </div>
+                            <div class="text-end">
+                                {% if record.action|lower == 'check_in' %}
+                                    <span class="badge bg-success">
+                                        {{ record.action|title }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        {{ record.action|title }}
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">{{ record.timestamp|time }}</small>
+                            </div>
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Dashboard - Face Recognition Attendance{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="gradient-bg text-white rounded p-4 mb-4">
+                <h1 class="display-4"><i class="fas fa-user me-3"></i>Employee Dashboard</h1>
+                <p class="lead">Your personal attendance and profile management</p>
+
+<!-- Personal Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-calendar-day fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">{{ days_present_month }}</h5>
+                <p class="card-text">Days This Month</p>
+                <small class="text-muted">{{ attendance_percentage }}% Attendance</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                <h5 class="card-title">{{ hours_today }}</h5>
+                <p class="card-text">Hours Today</p>
+                <small class="text-muted">{{ status_today }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                <h5 class="card-title">{{ avg_hours_week }}</h5>
+                <p class="card-text">Avg Hours/Week</p>
+                <small class="text-muted">This Month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center card-hover">
+            <div class="card-body">
+                <i class="fas fa-medal fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">{{ streak_days }}</h5>
+                <p class="card-text">Day Streak</p>
+                <small class="text-muted">Consecutive Days</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance_check' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-camera me-2"></i>Check In/Out
+                    </a>
+                    <button class="btn btn-outline-info" onclick="viewProfile()">
+                        <i class="fas fa-user-edit me-2"></i>Update Profile
+                    </button>
+                    <button class="btn btn-outline-success" onclick="requestLeave()">
+                        <i class="fas fa-calendar-times me-2"></i>Request Leave
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="reportIssue()">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Report Issue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Schedule -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-calendar-check me-2"></i>Today's Schedule</h5>
+            </div>
+            <div class="card-body">
+                {% if today_summary %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-sign-in-alt text-success me-1"></i>Check In:</span>
+                            <strong>{{ today_summary.check_in_time|default:"Not yet" }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-sign-out-alt text-warning me-1"></i>Check Out:</span>
+                            <strong>{{ today_summary.check_out_time|default:"Not yet" }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-clock text-info me-1"></i>Hours Worked:</span>
+                            <strong>{{ today_summary.total_hours|default:"0" }}h</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span><i class="fas fa-flag text-primary me-1"></i>Status:</span>
+                            {% if today_summary.check_out_time %}
+                                <span class="badge bg-success">Complete</span>
+                            {% elif today_summary.check_in_time %}
+                                <span class="badge bg-warning">In Progress</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Not Started</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No attendance recorded today</p>
+                        <a href="{% url 'attendance_check' %}" class="btn btn-primary">
+                            <i class="fas fa-camera me-2"></i>Check In Now
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-history me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                {% if recent_records %}
+                    {% for record in recent_records %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% if record.action|lower == 'check_in' %}
+                                    <i class="fas fa-sign-in-alt text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-sign-out-alt text-warning me-2"></i>
+                                {% endif %}
+                                <strong>{{ record.action|title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ record.date }}</small>
+                            </div>
+                            <div class="text-end">
+                                <strong>{{ record.timestamp|time }}</strong>
+                                {% if record.confidence %}
+                                    <br><small class="text-muted">{{ record.confidence|floatformat:0 }}%</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Overview -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2"></i>This Week's Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for day in week_summary %}
+                        <div class="col">
+                            <div class="text-center">
+                                <h6>{{ day.day_name }}</h6>
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body py-2">
+                                        {% if day.is_present %}
+                                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                                            <br>
+                                            <small class="text-success">{{ day.hours }}h</small>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-muted fa-2x"></i>
+                                            <br>
+                                            <small class="text-muted">Absent</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Summary -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-circle me-2"></i>Profile Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if employee %}
+                    <div class="d-flex align-items-center mb-3">
+                        {% if employee.profile_image %}
+                            <img src="{{ employee.profile_image.url }}" alt="{{ employee.first_name }}" 
+                                 class="rounded-circle me-3" width="80" height="80" style="object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-user text-white fa-2x"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h5>{{ employee.first_name }} {{ employee.last_name }}</h5>
+                            <p class="text-muted mb-1">{{ employee.employee_id }}</p>
+                            <p class="text-muted mb-0">{{ employee.department }} - {{ employee.position }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Email:</small>
+                            <p>{{ employee.email }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Hire Date:</small>
+                            <p>{{ employee.hire_date|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        {% if employee.face_encoding %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Face Recognition Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-exclamation me-1"></i>Face Recognition Needed
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Monthly Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Days Present:</span>
+                        <strong>{{ days_present_month }}/{{ total_work_days }}</strong>
+                    </div>
+                    <div class="progress mt-1">
+                        <div class="progress-bar bg-success" style="width: {{ attendance_percentage }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Total Hours:</span>
+                        <strong>{{ total_hours_month }}h</strong>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Average Daily:</span>
+                        <strong>{{ avg_daily_hours }}h</strong>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>On-time Rate:</span>
+                        <strong>{{ ontime_percentage }}%</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+function viewProfile() {
+    window.location.href = "{% url 'employee_list' %}";
+}
+
+function requestLeave() {
+    alert('Leave request functionality would be implemented here');
+    // Future implementation for leave requests
+}
+
+function reportIssue() {
+    alert('Issue reporting functionality would be implemented here');
+    // Future implementation for issue reporting
+}
+
+// Initialize WebSocket for employee dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize employee-specific WebSocket
+    const employeeId = '{{ employee.employee_id }}';
+    if (employeeId && employeeId !== 'None') {
+        window.AttendanceWebSockets.initEmployee(employeeId);
+    }
+    
+    // Also initialize general notifications
+    window.AttendanceWebSockets.initNotifications();
+});
+</script>
+{% endblock %}

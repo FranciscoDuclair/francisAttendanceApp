@@ -1,0 +1,251 @@
+<!-- WebSocket JavaScript for Real-time Notifications -->
+<script>
+class AttendanceWebSocket {
+    constructor() {
+        this.socket = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectInterval = 3000;
+    }
+
+    connect(endpoint) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/${endpoint}/`;
+        
+        this.socket = new WebSocket(wsUrl);
+        
+        this.socket.onopen = (event) => {
+            console.log('WebSocket connected:', endpoint);
+            this.reconnectAttempts = 0;
+            this.onConnectionOpen(event);
+        };
+        
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleMessage(data);
+        };
+        
+        this.socket.onclose = (event) => {
+            console.log('WebSocket disconnected:', endpoint);
+            this.onConnectionClose(event);
+            this.attemptReconnect(endpoint);
+        };
+        
+        this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.onConnectionError(error);
+        };
+    }
+
+    attemptReconnect(endpoint) {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            
+            setTimeout(() => {
+                this.connect(endpoint);
+            }, this.reconnectInterval);
+        }
+    }
+
+    send(data) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(data));
+        }
+    }
+
+    disconnect() {
+        if (this.socket) {
+            this.socket.close();
+        }
+    }
+
+    // Override these methods in specific implementations
+    onConnectionOpen(event) {}
+    onConnectionClose(event) {}
+    onConnectionError(error) {}
+    handleMessage(data) {}
+}
+
+// Attendance Notifications WebSocket
+class AttendanceNotifications extends AttendanceWebSocket {
+    constructor() {
+        super();
+        this.connect('attendance/notifications');
+    }
+
+    handleMessage(data) {
+        if (data.type === 'attendance_notification') {
+            this.showNotification(data.message);
+        }
+    }
+
+    showNotification(message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        const actionColor = message.action === 'Check In' ? 'success' : 'warning';
+        
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${message.action === 'Check In' ? 'sign-in-alt' : 'sign-out-alt'} text-${actionColor} me-2"></i>
+                <div>
+                    <strong>${message.employee_name}</strong> (${message.employee_id})<br>
+                    <small>${message.action} - ${message.department} - Confidence: ${message.confidence}%</small>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Dashboard Updates WebSocket
+class DashboardUpdates extends AttendanceWebSocket {
+    constructor() {
+        super();
+        this.connect('dashboard/updates');
+    }
+
+    handleMessage(data) {
+        if (data.type === 'dashboard_stats') {
+            this.updateDashboardStats(data.data);
+        } else if (data.type === 'dashboard_update') {
+            this.handleDashboardUpdate(data.data);
+        }
+    }
+
+    updateDashboardStats(stats) {
+        // Update dashboard statistics in real-time
+        const elements = {
+            'total-employees': stats.total_employees,
+            'present-today': stats.present_today,
+            'absent-today': stats.absent_today,
+            'attendance-rate': stats.attendance_rate + '%'
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+    }
+
+    handleDashboardUpdate(data) {
+        if (data.type === 'attendance_event') {
+            // Update counters when new attendance is recorded
+            this.refreshDashboardStats();
+        }
+    }
+
+    refreshDashboardStats() {
+        // Trigger a stats refresh
+        this.send({type: 'refresh_stats'});
+    }
+}
+
+// Employee Dashboard WebSocket
+class EmployeeDashboard extends AttendanceWebSocket {
+    constructor(employeeId) {
+        super();
+        this.employeeId = employeeId;
+        this.connect(`employee/${employeeId}/dashboard`);
+    }
+
+    handleMessage(data) {
+        if (data.type === 'employee_stats') {
+            this.updateEmployeeStats(data.data);
+        } else if (data.type === 'employee_update') {
+            this.handleEmployeeUpdate(data.data);
+        }
+    }
+
+    updateEmployeeStats(stats) {
+        // Update employee dashboard with real-time data
+        if (stats.error) {
+            console.error('Employee not found:', stats.error);
+            return;
+        }
+        
+        // Update today's status
+        const status = stats.today_status;
+        const elements = {
+            'employee-name': stats.employee_name,
+            'employee-id': stats.employee_id,
+            'department': stats.department,
+            'check-in-time': status.check_in_time || 'Not checked in',
+            'check-out-time': status.check_out_time || 'Not checked out',
+            'total-hours': status.total_hours.toFixed(2) + ' hours',
+            'status-badge': status.is_present ? 'Present' : 'Absent'
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+        
+        // Update status badge color
+        const badge = document.getElementById('status-badge');
+        if (badge) {
+            badge.className = `badge ${status.is_present ? 'bg-success' : 'bg-danger'}`;
+        }
+    }
+
+    handleEmployeeUpdate(data) {
+        if (data.type === 'attendance_update') {
+            // Refresh employee stats when attendance changes
+            this.send({type: 'refresh_employee_stats'});
+        }
+    }
+}
+
+// Global WebSocket manager
+window.AttendanceWebSockets = {
+    notifications: null,
+    dashboard: null,
+    employee: null,
+    
+    initNotifications() {
+        if (!this.notifications) {
+            this.notifications = new AttendanceNotifications();
+        }
+    },
+    
+    initDashboard() {
+        if (!this.dashboard) {
+            this.dashboard = new DashboardUpdates();
+        }
+    },
+    
+    initEmployee(employeeId) {
+        if (this.employee) {
+            this.employee.disconnect();
+        }
+        this.employee = new EmployeeDashboard(employeeId);
+    },
+    
+    disconnect() {
+        if (this.notifications) this.notifications.disconnect();
+        if (this.dashboard) this.dashboard.disconnect();
+        if (this.employee) this.employee.disconnect();
+    }
+};
+
+// Auto-cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    window.AttendanceWebSockets.disconnect();
+});
+</script>
